@@ -1,0 +1,90 @@
+# 💡 O application.yml é o arquivo de configuração principal do Spring Boot.
+# Usamos YAML em vez do application.properties porque é mais legível
+# e suporta hierarquia de configurações de forma mais clara.
+
+spring:
+  application:
+    name: SmartWallet
+
+  # ===== BANCO DE DADOS =====
+  datasource:
+    # 💡 A URL de conexão segue o padrão:
+    # jdbc:postgresql://host:porta/nome_do_banco
+    url: jdbc:postgresql://localhost:5432/smartwallet_db
+    username: smartwallet_user
+    password: smartwallet_dev_pass
+    driver-class-name: org.postgresql.Driver
+
+  # ===== JPA / HIBERNATE =====
+  jpa:
+    # 💡 hibernate.ddl-auto controla o que o Hibernate faz com o schema do banco:
+    # 'validate'  = só valida se as tabelas batem com as entidades (produção)
+    # 'update'    = atualiza o schema automaticamente (cuidado em produção)
+    # 'create'    = recria tudo ao iniciar (perde dados!)
+    # 'none'      = não faz nada (usamos Flyway/Liquibase para migrations)
+    # Para o MVP usamos 'update' para agilizar desenvolvimento.
+    # Quando tivermos dados reais, migramos para Flyway.
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        # Dialeto específico do PostgreSQL — otimizações de SQL nativas
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # 💡 'true' exibe as queries SQL no console — ótimo para aprender
+        # e debugar o que o Hibernate está fazendo por baixo dos panos.
+        show_sql: true
+        format_sql: true
+    # Inicializa o schema antes do Hibernate (necessário para o init.sql funcionar)
+    defer-datasource-initialization: true
+
+  # ===== REDIS =====
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: smartwallet_redis_pass
+      # 💡 Timeout de conexão em milissegundos
+      timeout: 2000ms
+
+  # ===== SEGURANÇA (configuração inicial) =====
+  security:
+    # Desabilita o formulário de login padrão do Spring Security
+    # Vamos configurar JWT manualmente nas próximas etapas
+    oauth2:
+      resourceserver:
+        jwt:
+          # Será preenchido quando configurarmos o JWT
+          issuer-uri:
+
+# ===== SERVIDOR =====
+server:
+  port: 8080
+  # 💡 Prefixo para todos os endpoints da API — boa prática para versionamento
+  # Todos os endpoints ficarão em: http://localhost:8080/api/v1/...
+  servlet:
+    context-path: /api/v1
+
+# ===== CONFIGURAÇÕES DA APLICAÇÃO =====
+# 💡 Criamos um namespace próprio 'smartwallet' para nossas configs customizadas.
+# Isso evita conflito com propriedades do Spring e fica mais organizado.
+smartwallet:
+  jwt:
+    # 💡 Secret para assinar os tokens JWT — NUNCA commite um secret real aqui!
+    # Em produção isso virá de variáveis de ambiente ou um secrets manager.
+    # Mínimo 256 bits (32 caracteres) para o algoritmo HS256.
+    secret: "SmartWalletDevSecretKey_TROQUE_EM_PRODUCAO_256bits!!"
+    # Tempo de expiração do access token: 15 minutos (em ms)
+    expiration: 900000
+    # Tempo de expiração do refresh token: 7 dias (em ms)
+    refresh-expiration: 604800000
+
+# ===== LOGS =====
+logging:
+  level:
+    # 💡 Mostra as queries SQL formatadas no console durante desenvolvimento
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    com.Smartwallet: DEBUG
+  pattern:
+    # Formato legível com timestamp, nível, classe e mensagem
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

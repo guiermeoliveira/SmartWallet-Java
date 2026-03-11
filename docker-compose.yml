@@ -1,0 +1,104 @@
+# 💡 O docker-compose.yml define todos os serviços (containers) que a aplicação precisa.
+# Em vez de instalar PostgreSQL e Redis na sua máquina, o Docker sobe tudo isolado,
+# sem conflito com outros projetos, e você derruba tudo com um comando quando quiser.
+
+services:
+
+  # ===== BANCO DE DADOS =====
+  postgres:
+    # 💡 Usamos a imagem oficial do PostgreSQL versão 16 (LTS).
+    # O ':16' garante que sempre usará essa versão — sem surpresas de atualização.
+    image: postgres:16
+    container_name: smartwallet-postgres
+
+    # 💡 'restart: unless-stopped' = o container sobe automaticamente se o Docker
+    # reiniciar (ex: após reboot do PC), mas respeita se você parar manualmente.
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: smartwallet_db
+      POSTGRES_USER: smartwallet_user
+      # 💡 Senha simples para desenvolvimento local — NUNCA use isso em produção.
+      # Em produção usaremos variáveis de ambiente seguras (secrets).
+      POSTGRES_PASSWORD: smartwallet_dev_pass
+
+    ports:
+      # 💡 Formato: "porta_da_sua_maquina:porta_do_container"
+      # Acessamos o banco em localhost:5432 como se estivesse instalado localmente.
+      - "5432:5432"
+
+    volumes:
+      # 💡 Volumes persistem os dados entre reinicializações do container.
+      # Sem isso, toda vez que o container parar, o banco apagaria tudo.
+      # 'smartwallet-postgres-data' é um volume nomeado gerenciado pelo Docker.
+      - smartwallet-postgres-data:/var/lib/postgresql/data
+
+      # 💡 Scripts .sql nesta pasta são executados automaticamente na primeira vez
+      # que o container sobe — perfeito para criar extensões e schemas iniciais.
+      - ./docker/init:/docker-entrypoint-initdb.d
+
+    # 💡 Healthcheck: o Docker verifica se o banco está realmente pronto para aceitar
+    # conexões antes de considerar o container "saudável".
+    # Isso evita que a aplicação tente conectar antes do banco estar disponível.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartwallet_user -d smartwallet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== CACHE / SESSÕES =====
+  redis:
+    # 💡 Redis 7 Alpine — 'alpine' é uma versão minimalista da imagem,
+    # muito menor em tamanho (30MB vs 130MB), ideal para desenvolvimento.
+    image: redis:7-alpine
+    container_name: smartwallet-redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    # 💡 Protege o Redis com senha mesmo em desenvolvimento.
+    # É uma boa prática manter o hábito de segurança desde o início.
+    command: redis-server --requirepass smartwallet_redis_pass
+
+    volumes:
+      - smartwallet-redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "smartwallet_redis_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== INTERFACE VISUAL DO BANCO (opcional, mas muito útil) =====
+  pgadmin:
+    # 💡 PgAdmin é uma interface web para visualizar e gerenciar o PostgreSQL.
+    # Muito mais confortável que usar comandos SQL no terminal para iniciantes.
+    image: dpage/pgadmin4:latest
+    container_name: smartwallet-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartwallet.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+
+    ports:
+      # Acesse em: http://localhost:5050
+      - "5050:80"
+
+    depends_on:
+      postgres:
+        # 💡 'condition: service_healthy' garante que o pgadmin só sobe
+        # após o PostgreSQL passar no healthcheck — sem corrida entre serviços.
+        condition: service_healthy
+
+    volumes:
+      - smartwallet-pgadmin-data:/var/lib/pgadmin
+
+# 💡 Volumes nomeados são gerenciados pelo Docker e persistem
+# mesmo quando os containers são parados ou removidos.
+# Para apagar tudo: docker compose down -v (o -v remove os volumes também)
+volumes:
+  smartwallet-postgres-data:
+  smartwallet-redis-data:
+  smartwallet-pgadmin-data:

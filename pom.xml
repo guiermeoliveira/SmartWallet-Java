@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- 💡 Spring Boot 3.4.3 — versão LTS estável, amplamente documentada.
+		 Evitamos o Boot 4.x por ser muito recente (lançado em 2025), com pouca
+		 documentação e possíveis breaking changes ainda sendo resolvidos. -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.3</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.Smartwallet</groupId>
+	<artifactId>SmartWallet</artifactId>
+	<version>0.0.1-v1</version>
+	<name>SmartWallet</name>
+	<description>Carteira educativa inteligente — SaaS de Educação Financeira com IA</description>
+
+	<properties>
+		<!-- 💡 Java 21 — versão LTS com suporte até 2030.
+			 Java 25 foi lançado recentemente e ainda não é LTS.
+			 Para produção, sempre prefira versões LTS: 11, 17, 21, 25 (futuro). -->
+		<java.version>25</java.version>
+
+		<!-- 💡 Spring AI 1.0.0 — primeira versão estável (GA).
+			 A 2.0.0-M2 que você tinha é milestone (M = milestone, não é release final).
+			 Versões milestone podem ter APIs que mudam sem aviso. -->
+		<spring-ai.version>1.0.0</spring-ai.version>
+
+		<!-- Versão do JJWT para geração/validação de tokens JWT -->
+		<jjwt.version>0.12.6</jjwt.version>
+	</properties>
+
+	<dependencies>
+
+		<!-- ===== WEB ===== -->
+
+		<!-- 💡 spring-boot-starter-web é o starter correto para APIs REST.
+			 Ele já inclui: Spring MVC, Tomcat embutido, Jackson (JSON), e mais.
+			 O 'webmvc' e 'webservices' que você tinha são para casos específicos
+			 (SOAP, configurações manuais) — não precisamos deles no MVP. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- ===== VALIDAÇÃO ===== -->
+
+		<!-- 💡 ESSENCIAL — sem esse starter, @NotBlank, @Email, @ValidCPF não funcionam.
+			 Ele traz o hibernate-validator (implementação do Jakarta Validation)
+			 já configurado e integrado ao Spring. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+
+		<!-- ===== BANCO DE DADOS ===== -->
+
+		<!-- Spring Data JPA: abstração do banco de dados.
+			 Permite criar repositórios com métodos como findByEmail() sem SQL manual. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- Driver do PostgreSQL: necessário para conectar ao banco.
+			 'runtime' = só precisa em execução, não na compilação. -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- ===== SEGURANÇA ===== -->
+
+		<!-- Spring Security: autenticação, autorização, proteção CSRF, CORS etc.
+			 Quando adicionado, por padrão bloqueia TODOS os endpoints — vamos configurar. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+
+		<!-- 💡 JJWT — biblioteca para criar e validar tokens JWT.
+			 JWT (JSON Web Token) é como o usuário prova que está autenticado
+			 após o login, sem precisar enviar senha a cada requisição.
+			 Dividida em 3 partes: api (interfaces) + impl (implementação) + jackson (serialização JSON). -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- ===== IA (Spring AI) ===== -->
+
+		<!-- 💡 OpenAI — nosso provider principal de IA para o MVP.
+			 Cobre: chat (coach financeiro), embeddings (RAG), geração de conteúdo.
+			 Os outros providers (Azure, Gemini, Llama) entram nas próximas sprints. -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-openai</artifactId>
+		</dependency>
+
+		<!-- Vector Store com pgvector — armazena embeddings direto no PostgreSQL.
+			 Perfeito para o MVP: não precisamos de um banco vetorial separado (Pinecone etc.)
+			 O Pinecone e outros entram quando escalarmos. -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
+		</dependency>
+
+		<!-- Advisors para RAG (Retrieval Augmented Generation):
+			 Permite que a IA busque contexto na base de conhecimento antes de responder. -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-advisors-vector-store</artifactId>
+		</dependency>
+
+		<!-- ===== UTILITÁRIOS ===== -->
+
+		<!-- Lombok: elimina boilerplate Java (@Getter, @Setter, @Builder, @Slf4j etc.)
+			 'optional=true' significa que projetos que dependem do SmartWallet
+			 não herdam o Lombok automaticamente. -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- DevTools: hot reload automático ao salvar arquivos durante desenvolvimento.
+			 'runtime' + 'optional' = só ativo em dev, nunca vai para produção. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- ===== TESTES ===== -->
+
+		<!-- 💡 spring-boot-starter-test inclui tudo para testes:
+			 JUnit 5, Mockito, AssertJ, MockMvc — não precisa adicionar separado. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Testes de segurança: permite simular usuários autenticados nos testes. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<!-- 💡 dependencyManagement NÃO adiciona dependências ao projeto.
+		 Ele apenas centraliza versões para que dependências filhas não precisem
+		 repetir a versão. O spring-ai-bom (Bill of Materials) gerencia as versões
+		 de todos os módulos do Spring AI de forma consistente. -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency> 
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>2.0.17</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<!-- Configura o compilador Java com suporte ao Lombok -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<!-- 💡 Lombok precisa ser processado antes da compilação (annotation processor).
+							 Sem isso, as anotações @Getter, @Builder etc. não são geradas. -->
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+
+			<!-- Plugin do Spring Boot: empacota o projeto como JAR executável -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<!-- Lombok não vai para produção — só precisa em tempo de compilação -->
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

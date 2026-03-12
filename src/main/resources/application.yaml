@@ -10,7 +10,7 @@ spring:
   datasource:
     # 💡 A URL de conexão segue o padrão:
     # jdbc:postgresql://host:porta/nome_do_banco
-    url: jdbc:postgresql://localhost:5432/smartwallet_db
+    url: jdbc:postgresql://localhost:5432/
     username: 
     password:
     driver-class-name:

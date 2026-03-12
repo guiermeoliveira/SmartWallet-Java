@@ -11,9 +11,9 @@ spring:
     # 💡 A URL de conexão segue o padrão:
     # jdbc:postgresql://host:porta/nome_do_banco
     url: jdbc:postgresql://localhost:5432/smartwallet_db
-    username: smartwallet_user
-    password: smartwallet_dev_pass
-    driver-class-name: org.postgresql.Driver
+    username: 
+    password:
+    driver-class-name:
 
   # ===== JPA / HIBERNATE =====
   jpa:
@@ -41,8 +41,8 @@ spring:
   data:
     redis:
       host: localhost
-      port: 6379
-      password: smartwallet_redis_pass
+      port: 
+      password: 
       # 💡 Timeout de conexão em milissegundos
       timeout: 2000ms
 
